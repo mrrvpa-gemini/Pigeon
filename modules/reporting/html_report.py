@@ -15,16 +15,15 @@ def _escape(value: object) -> str:
 
 
 def generate_html_report(target: str, findings: Iterable[Finding], output_path: str) -> str:
-    """Generate a responsive, professional HTML report."""
+    """Generate a responsive HTML report; escape values, not the generated markup."""
 
     finding_list = list(findings)
     severity_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Info": 0}
     for item in finding_list:
         severity_counts[item.severity] = severity_counts.get(item.severity, 0) + 1
 
-    rows_html = ""
-    for item in finding_list:
-        rows_html += """
+    rows_html = "".join(
+        """
         <tr>
             <td>{title}</td>
             <td class="severity {severity}">{severity}</td>
@@ -41,6 +40,8 @@ def generate_html_report(target: str, findings: Iterable[Finding], output_path: 
             evidence=_escape(item.evidence),
             recommendation=_escape(item.recommendation),
         )
+        for item in finding_list
+    )
 
     template_path = Path(__file__).with_name("templates") / "report.html"
     template = template_path.read_text(encoding="utf-8")
@@ -53,7 +54,8 @@ def generate_html_report(target: str, findings: Iterable[Finding], output_path: 
         medium=_escape(str(severity_counts.get("Medium", 0))),
         low=_escape(str(severity_counts.get("Low", 0))),
         info=_escape(str(severity_counts.get("Info", 0))),
-        rows=_escape(rows_html),
+        # rows_html contains only fixed markup plus individually escaped fields.
+        rows=rows_html,
     )
 
     output = Path(output_path)

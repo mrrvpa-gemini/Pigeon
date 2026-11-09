@@ -8,11 +8,10 @@ from pathlib import Path
 from typing import Any
 
 from config import DEFAULT_REPORT_FILENAME, DEFAULT_VALIDATION_OUTPUT
-from core.exceptions import ValidationError
 from core.logger import get_logger
-from core.models import Finding, ValidationResult
+from core.models import Finding
 from core.scope import Scope
-from modules.exploitation.validation import ValidationEngine
+from modules.exploitation.safe_poc import ValidationEngine
 from modules.recon.dns import resolve_hostname
 from modules.recon.http_info import fetch_http_metadata
 from modules.recon.technologies import detect_technologies
@@ -50,7 +49,6 @@ class Orchestrator:
     def run_scan(self, target: str) -> list[Finding]:
         validated = self.scope.validate_target(target)
         findings: list[Finding] = []
-
         findings.extend(check_security_headers(validated.url))
         findings.extend(check_tls_metadata(validated.url))
         findings.extend(run_non_destructive_checks(validated.url))
@@ -59,30 +57,26 @@ class Orchestrator:
         seen: set[str] = set()
         for finding in findings:
             key = f"{finding.title}:{finding.severity}:{finding.category}"
-            if key in seen:
-                continue
-            deduped.append(finding)
-            seen.add(key)
+            if key not in seen:
+                deduped.append(finding)
+                seen.add(key)
         return deduped
 
     def generate_html_report(self, target: str, findings: list[Finding], output_name: str = DEFAULT_REPORT_FILENAME) -> str:
         validated = self.scope.validate_target(target)
         report_path = Path(output_name)
-        if report_path.parent and not report_path.parent.exists():
-            report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path = report_path.resolve()
-        html_report = generate_html_report(validated.url, findings, str(report_path))
+        generate_html_report(validated.url, findings, str(report_path))
         return str(report_path)
 
     def run_proxy(self, host: str = "127.0.0.1", port: int = 8080) -> None:
-        proxy = ProxyServer(host=host, port=port)
-        proxy.serve_forever()
+        ProxyServer(host=host, port=port).serve_forever()
 
     def validate_finding(self, title: str, description: str, evidence: str, output_name: str = DEFAULT_VALIDATION_OUTPUT) -> dict[str, Any]:
         engine = ValidationEngine()
         result = engine.validate(title=title, description=description, evidence=evidence)
         output_path = Path(output_name)
-        if output_path.parent and not output_path.parent.exists():
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
         return result.to_dict()

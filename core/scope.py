@@ -4,27 +4,24 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
-from config import DEFAULT_ALLOWED_HOSTS, get_allowed_hosts
+from config import get_allowed_hosts
 from core.exceptions import ValidationError
 
 
 class Scope:
-    """A strict but practical target validation layer for safe testing."""
+    """Strict target validation based on an explicit allowlist."""
 
     def __init__(self, allowed_hosts: set[str] | None = None):
-        self.allowed_hosts = {host.lower().strip() for host in (allowed_hosts or get_allowed_hosts()) if host}
+        configured_hosts = get_allowed_hosts() if allowed_hosts is None else allowed_hosts
+        self.allowed_hosts = {
+            str(host).lower().strip().rstrip(".")
+            for host in configured_hosts
+            if str(host).strip()
+        }
 
     def _is_allowed_host(self, host: str) -> bool:
-        normalized = (host or "").lower().strip()
-        if not normalized:
-            return False
-        if normalized in self.allowed_hosts:
-            return True
-        if normalized.startswith("."):
-            normalized = normalized.lstrip(".")
-        if normalized.endswith(".example"):
-            return True
-        return False
+        normalized = (host or "").lower().strip().rstrip(".")
+        return bool(normalized) and normalized in self.allowed_hosts
 
     def validate_target(self, target: str) -> "ValidatedTarget":
         if not target or not str(target).strip():
@@ -36,21 +33,27 @@ class Scope:
             raise ValidationError("Only http:// and https:// URLs are supported.")
         if not parsed.netloc:
             raise ValidationError("Target URL is incomplete.")
+        if parsed.username is not None or parsed.password is not None:
+            raise ValidationError("Credentials must not be embedded in the target URL.")
 
-        hostname = (parsed.hostname or "").lower().strip()
+        hostname = (parsed.hostname or "").lower().strip().rstrip(".")
         if not hostname:
             raise ValidationError("Could not parse target hostname.")
 
-        if hostname in {"localhost", "127.0.0.1", "::1"} and not self._is_allowed_host(hostname):
-            raise ValidationError("Loopback targets are not allowed by default.")
+        try:
+            port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        except ValueError as exc:
+            raise ValidationError("Target URL contains an invalid port.") from exc
+        if not 1 <= port <= 65535:
+            raise ValidationError("Target URL port must be between 1 and 65535.")
 
         if not self._is_allowed_host(hostname):
             raise ValidationError(
                 f"Target host '{hostname}' is not in the authorized scope. "
-                "Set RVPA_ALLOWED_HOSTS or use an approved domain."
+                "Add the exact authorized hostname to RVPA_ALLOWED_HOSTS."
             )
 
-        return ValidatedTarget(url=url, scheme=parsed.scheme, host=hostname, port=parsed.port or (443 if parsed.scheme == "https" else 80))
+        return ValidatedTarget(url=url, scheme=parsed.scheme, host=hostname, port=port)
 
 
 class ValidatedTarget:
