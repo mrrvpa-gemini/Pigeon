@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rvpa Pentest Toolkit Report</title>
+  <style>
+    :root {{
+      --bg: #0b1320;
+      --panel: #121d2c;
+      --panel-alt: #1a2a3a;
+      --text: #ecf3ff;
+      --muted: #a7b8d4;
+      --accent: #5bc0eb;
+      --critical: #ef476f;
+      --high: #f07167;
+      --medium: #f4d35e;
+      --low: #8ecae6;
+      --info: #7bd389;
+      --border: #2e4057;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }}
+    .container {{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 16px 64px;
+    }}
+    .header {{
+      background: linear-gradient(135deg, var(--panel), var(--panel-alt));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 22px;
+    }}
+    h1 {{ margin: 0 0 10px; font-size: 2rem; }}
+    .meta {{ color: var(--muted); font-size: 0.98rem; }}
+    .summary {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin: 20px 0 0;
+    }}
+    .card {{
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px 16px;
+    }}
+    .label {{
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 8px;
+    }}
+    .value {{ font-size: 1.7rem; font-weight: bold; }}
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }}
+    th, td {{
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+    }}
+    th {{ background: var(--panel-alt); color: var(--text); }}
+    td {{ color: var(--text); }}
+    .severity {{
+      font-weight: bold;
+      text-transform: uppercase;
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }}
+    .Critical {{ background: rgba(239,71,111,0.18); color: var(--critical); }}
+    .High {{ background: rgba(240,113,103,0.18); color: var(--high); }}
+    .Medium {{ background: rgba(244,211,94,0.18); color: var(--medium); }}
+    .Low {{ background: rgba(142,202,230,0.18); color: var(--low); }}
+    .Info {{ background: rgba(123,211,137,0.18); color: var(--info); }}
+    .muted {{ color: var(--muted); }}
+    @media (max-width: 768px) {{
+      th, td {{ display: block; width: 100%; }}
+      tr {{ display: block; border-bottom: 1px solid var(--border); }}
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Rvpa Pentest Toolkit</h1>
+      <div class="meta">Target: {target}</div>
+      <div class="meta">Generated at: {generated_at}</div>
+      <div class="summary">
+        <div class="card">
+          <span class="label">Total findings</span>
+          <div class="value">{total_findings}</div>
+        </div>
+        <div class="card">
+          <span class="label">Critical</span>
+          <div class="value">{critical}</div>
+        </div>
+        <div class="card">
+          <span class="label">High</span>
+          <div class="value">{high}</div>
+        </div>
+        <div class="card">
+          <span class="label">Medium</span>
+          <div class="value">{medium}</div>
+        </div>
+        <div class="card">
+          <span class="label">Low</span>
+          <div class="value">{low}</div>
+        </div>
+        <div class="card">
+          <span class="label">Info</span>
+          <div class="value">{info}</div>
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Severity</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Evidence</th>
+          <th>Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
